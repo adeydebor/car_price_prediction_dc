@@ -31,7 +31,5 @@ This project was completed as part of a DataCamp R project to enhance proficienc
 ## Results Summary
 - Baseline Model Performance --> R^2 = 0.9135, RMSE = 2693.56
 - Enhanced Model Performance --> R^2 = 0.9164, RMSE = 2658.87
-- Improvemen
-- Improvements --> 
 - Final Retained Features --> Efficiency, Cylinder, Doors, Cadillac, Saab, convertible, hatchback, sedan
 The optimized model used fewer features while achieving slightly better performance, demonstrating that a simpler, faster, and more efficient model can still yield accurate price predictions.
