@@ -1,0 +1,112 @@
+---
+title: "Car Price Prediction Using Linear Regression"
+output: html_document
+---
+
+# Car Price Prediction Using Linear Regression
+
+## Overview
+### This project applies linear regression modeling to predict car prices using vehicle features. The analysis includes a baseline model, feature selection, advanced feature engineering, and performance evaluation. Model performance is assessed using R² and RMSE metrics.
+### This project was completed using R and the `tidymodels` framework as part of a DataCamp project.
+
+## Load Libraries and Data
+
+```{r}
+# Load required libraries
+library(tidymodels)
+library(tidyverse)
+library(vip)
+library(broom)
+
+# Load training and test datasets
+train <- read_csv("train.csv", show_col_types = FALSE)
+test <- read_csv("test.csv", show_col_types = FALSE)
+```
+
+## Baseline Model: Linear Regression
+### We start with a simple linear regression model using all available features, with no transformations. Model performance is evaluated on the test dataset.
+
+```{r}
+# Define baseline linear regression model
+model <- linear_reg()
+
+# Define recipe with all features
+recipe_plain <- recipe(Price ~ ., data = train)
+
+# Define evaluation metrics
+metrics <- metric_set(rsq, rmse)
+
+# Fit baseline model and evaluate
+original_performance <- 
+  workflow() %>%  
+  add_model(model) %>%  
+  add_recipe(recipe_plain) %>%  
+  fit(train) %>%  
+  augment(new_data = test) %>%  
+  metrics(truth = Price, estimate = .pred) %>%  
+  select(.estimate) %>%  
+  pull()
+
+# Display performance
+print("Baseline model performance:")
+print(original_performance)
+```
+
+## Feature Engineering and Model Refinement
+### We identify low-importance features to remove and apply feature transformations to improve model performance.
+
+```{r}
+# Features to remove (low predictive power)
+removed_features <- c("Chevy", "Pontiac", "Cruise", "Leather", 
+                      "Sound", "Buick", "Saturn", "wagon", "coupe")
+
+# Retain remaining features for documentation
+retained_features <- names(train)[!(names(train) %in% c(removed_features, "Price"))]
+
+# Enhanced recipe with transformations
+recipe <- 
+  recipe(Price ~ ., data = train) %>%  
+  step_mutate(Efficiency = Efficiency^2) %>%  
+  step_poly(Cylinder) %>%  
+  step_interact(~ starts_with("Cylinder"):Efficiency) %>%  
+  step_rm(removed_features)
+
+# Workflow with refined recipe
+workflow <- 
+  workflow() %>%  
+  add_model(model) %>%  
+  add_recipe(recipe)
+
+# Fit the refined model
+fit <- workflow %>% fit(train)
+```
+
+## Model Evaluation and Performance Improvement
+### We compare the refined model's performance with the baseline using R² and RMSE, and calculate improvement percentages.
+
+```{r}
+# Evaluate final model on test data
+final_performance <- 
+  fit %>%  
+  augment(new_data = test) %>%  
+  metrics(truth = Price, estimate = .pred) %>%  
+  select(.estimate) %>%  
+  pull()
+
+# Display final model performance
+print("Enhanced model performance:")
+print(final_performance)
+
+# Calculate improvements
+rsq_improvement <- (final_performance[1] - original_performance[1]) / original_performance[1] * 100
+rmse_improvement <- (original_performance[2] - final_performance[2]) / original_performance[2] * 100
+
+# Improvement summary
+cat("\nModel improvement:\n")
+cat("R² increased by", round(rsq_improvement, 2), "%\n")
+cat("RMSE decreased by", round(rmse_improvement, 2), "%\n")
+
+# Print retained features
+cat("\nRetained features:", length(retained_features), "total\n")
+print(retained_features)
+```
